@@ -1,107 +1,128 @@
-#Path to your oh-my-zsh installation.
-export ZSH=$HOME/.oh-my-zsh
-
-# Set name of the theme to load.
-# Look in ~/.oh-my-zsh/themes/
-# Optionally, if you set this to "random", it'll load a random theme each
-# time that oh-my-zsh is loaded.
-ZSH_THEME="dracula"
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to disable bi-weekly auto-update checks.
-# DISABLE_AUTO_UPDATE="true"
-
-# Uncomment the following line to change how often to auto-update (in days).
-# export UPDATE_ZSH_DAYS=13
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
- ENABLE_CORRECTION="false"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
- COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
+# =============================================================================
+#                                   oh-my-zsh
+# =============================================================================
+ZSH="$HOME/.oh-my-zsh"
 
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
-plugins=(stack git autojump)
+# plugins=(git zsh-syntax-highlighting zsh-title colored-man)
 
 source $ZSH/oh-my-zsh.sh
 
-# User configuration
+# =============================================================================
+#                                  Prompt Setup
+# =============================================================================
 
-export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"
-
-export GOPATH=$HOME/workspace/go
-export GOROOT=/usr/local/opt/go/libexec
-export PATH=$PATH:$GOPATH/bin:$GOROOT
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch x86_64"
-
-# ssh
-# export SSH_KEY_PATH="~/.ssh/dsa_id"
-
-# Set personal aliases, overriding those provided by oh-my-zsh libs,
-# plugins, and themes. Aliases can be placed here, though oh-my-zsh
-# users are encouraged to define aliases within the ZSH_CUSTOM folder.
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-alias j=autojump
-alias fgrep=fgrep --colour=always
-alias vim=nvim
-alias vi=nvim
-
-alias emacs='/Applications/Emacs.app/Contents/MacOS/Emacs'
-export EDITOR='nvim'
-
-# Stop zsh from auto renaming windows
-export DISABLE_AUTO_TITLE="true"
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# https://github.com/sjl/z-zsh
-# https://github.com/rupa/z
-. /Users/wgillmer/Code/bin/z.sh
-function precmd () {
-   z --add "$(pwd -P)"
+function _prompt_char() {
+  if $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+    echo "%{%F{blue}%}±%{%f%k%b%}"
+  else
+    echo ' '
+  fi
 }
 
-autoload -U colors && colors
+ZSH_THEME_GIT_PROMPT_PREFIX=" [%{%B%F{12}%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{%F{10}%}]"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %{%F{red}%}*%{%f%}"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
 
-export NVM_DIR="/Users/wgillmer/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
+PROMPT='%{%f%k%b%}
+%{%K{black}%B%(!|%F{9}|%F{11})%}%n%{%B%F{14}%}@%m %{%b%F{yellow}%}%~%{%B%F{10}%}$(git_prompt_info)%E%{%f%k%b%}
+%{%K{black}%}$(_prompt_char)%{%K{black}%} %#%{%f%k%b%} '
 
+DEFAULT_RPROMPT=""
+setopt prompt_subst
+function preexec() {
+  timer=${timer:-$SECONDS}
+}
+
+function precmd() {
+  if [ $timer ]; then
+    timer_show=$(($SECONDS - $timer))
+    export RPROMPT="%(0?||%{%F{red}%}%? )%{%F{cyan}%}${timer_show}s %{$reset_color%}"
+    unset timer
+  else
+    export RPROMPT=$DEFAULT_RPROMPT
+  fi
+}
+
+# =============================================================================
+#                                  Environment
+# =============================================================================
+export PATH="$HOME/local/bin:/usr/local/bin:$PATH"
+export EDITOR="vim"
+export VISUAL="vim"
+export LC_ALL="en_US.utf-8"
+export LANG="$LC_ALL"
+export FZF_DEFAULT_COMMAND='ag -g ""'
+export FZF_CTRL_T_COMMAND=$FZF_DEFAULT_COMMAND
+
+# =============================================================================
+#                                    Colors
+# =============================================================================
+# for tmux: export screen-256color
+[ "$TERM" = "linux" ] || { [ -n "$TMUX" ] && export TERM="screen-256color" || export TERM="xterm-256color" }
+eval `dircolors ~/.dir_colors`
+export GREP_COLOR=35
+
+# =============================================================================
+#                                    Aliases
+# =============================================================================
+# Make "open" open things
+command -v gnome-open > /dev/null && alias open='gnome-open'
+command -v gvfs-open > /dev/null && alias open='gvfs-open'
+
+alias vi="vim"
+alias vint="vim +NT"
+
+alias ls='ls --color=auto -h --group-directories-first'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+
+alias ag='ag --color-path=33 --color-match=35 --context=2'
+
+alias glg="git log --graph --decorate --abbrev-commit --date=relative"
+alias gn="git number"
+alias gst="gn"
+alias gds="git diff --staged -w"
+alias gp="git push origin HEAD -u"
+alias gph="gp && gh"
+alias gcd="git checkout develop && git pull"
+alias gcm="git checkout master && git pull"
+
+alias hlog='git log --all --graph --format="%C(yellow)%h %C(reset)%an %C(blue)%ar %C(red)%d %C(reset)%s"'
+alias xlog='git log --graph --format="%C(yellow)%h %C(reset)%an %C(blue)%ar %C(red)%d %C(reset)%s"'
+alias slog='git log --stat --all --graph --format="%C(yellow)%h %C(reset)%an %C(blue)%ar %C(red)%d %C(reset)%s"'
+alias mlog='git log --all --graph --format="%C(yellow)%h %C(red)%d %C(reset)%s"'
+
+# =============================================================================
+#                                  Functions
+# =============================================================================
+function vim-conflicts() {
+  vim -p +/"<<<<<<<" $( git diff --name-only --diff-filter=U | xargs )
+}
+
+function gh() {
+  open `git remote get-url origin | sed -Ee 's#(git@|git://)#https://#' -e 's@:([^:]+).git$@/\1@'`
+}
+
+man() {
+    env \
+        LESS_TERMCAP_mb=$'\e[31m' \
+        LESS_TERMCAP_md=$'\e[36m' \
+        LESS_TERMCAP_me=$'\e[0m' \
+        LESS_TERMCAP_se=$'\e[0m' \
+        LESS_TERMCAP_ue=$'\e[0m' \
+        LESS_TERMCAP_us=$'\e[32m' \
+            man "$@"
+}
+
+# =============================================================================
+#                     Source user-specific customizations
+# =============================================================================
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
